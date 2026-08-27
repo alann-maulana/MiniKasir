@@ -70,28 +70,25 @@ public class TransactionRepository {
      */
     public void createTransaction(TransactionEntity transaction, List<TransactionItemEntity> items) {
         executor.execute(() -> {
-            // 1. Persist transaction header and get the generated primary key.
-            long transactionId = transactionDao.insertTransaction(transaction);
+            // 1. Atomically persist transaction header + line items in one ACID block.
+            long transactionId = transactionDao.insertFullTransaction(transaction, items);
 
-            // 2. Bind the generated ID to every line item and persist them all.
-            for (TransactionItemEntity item : items) {
-                item.setTransactionId(transactionId);
-            }
-            transactionDao.insertItems(items);
-
-            // 3. Build a JSON payload for the sync queue so the worker can
+            // 2. Build a JSON payload for the sync queue so the worker can
             //    reconstruct the full request body without extra DB queries.
             String payload = gson.toJson(transaction);
 
             SyncQueueEntity queueEntry = new SyncQueueEntity();
-            queueEntry.setTransactionId(transactionId);
-            queueEntry.setTransactionCode(transaction.getTransactionCode());
+            queueEntry.setEntityType(SyncQueueEntity.ENTITY_TYPE_TRANSACTION);
+            queueEntry.setEntityId(transactionId);
+            queueEntry.setAction(SyncQueueEntity.ACTION_CREATE);
             queueEntry.setPayload(payload);
             queueEntry.setStatus(STATUS_PENDING);
             queueEntry.setRetryCount(0);
-            queueEntry.setCreatedAt(System.currentTimeMillis());
+            long now = System.currentTimeMillis();
+            queueEntry.setCreatedAt(now);
+            queueEntry.setUpdatedAt(now);
 
-            syncQueueDao.insert(queueEntry);
+            syncQueueDao.insertSyncItem(queueEntry);
         });
     }
 
@@ -103,7 +100,7 @@ public class TransactionRepository {
      * @param syncedAt Unix-epoch milliseconds of the server sync acknowledgement
      */
     public void updateTransactionStatus(long id, String status, long syncedAt) {
-        executor.execute(() -> transactionDao.updateStatus(id, status, syncedAt));
+        executor.execute(() -> transactionDao.updateTransactionStatus(id, status, syncedAt));
     }
 
     // -------------------------------------------------------------------------
