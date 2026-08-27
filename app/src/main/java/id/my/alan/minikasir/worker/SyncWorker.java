@@ -35,7 +35,7 @@ public class SyncWorker extends Worker {
         Log.d(TAG, "SyncWorker started background sync task");
         try {
             AppDatabase db = AppDatabase.getInstance(getApplicationContext());
-            SyncRepository syncRepository = new SyncRepository(db, ApiClient.getApiService());
+            SyncRepository syncRepository = new SyncRepository(db, ApiClient.getService());
             SyncRepository.SyncResult result = syncRepository.syncPendingTransactions();
 
             Log.i(TAG, "SyncWorker finished with result: " + result);

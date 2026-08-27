@@ -64,7 +64,7 @@ public class CreateTransactionUseCase {
             TransactionItemEntity entity = new TransactionItemEntity();
             entity.setProductId(item.getProductId());
             entity.setProductName(item.getProductName());
-            entity.setUnitPrice(item.getUnitPrice());
+            entity.setPrice(item.getUnitPrice());
             entity.setQuantity(item.getQuantity());
             entity.setSubtotal(item.getSubtotal());
             itemEntities.add(entity);
