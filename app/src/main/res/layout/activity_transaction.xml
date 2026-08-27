@@ -76,7 +76,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#E8EAF6"
+        android:background="@color/surface_blue_tint"
         android:orientation="vertical"
         android:padding="8dp">
 

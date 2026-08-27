@@ -1,13 +1,13 @@
 package id.my.alan.minikasir.ui.sync;
 
 import android.content.res.ColorStateList;
-import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
@@ -74,13 +74,17 @@ public class SyncQueueAdapter extends ListAdapter<SyncQueueEntity, SyncQueueAdap
             tvStatusBadge.setText(status);
 
             if ("SUCCESS".equalsIgnoreCase(status) || "SYNCED".equalsIgnoreCase(status)) {
-                tvStatusBadge.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#4CAF50")));
+                tvStatusBadge.setBackgroundTintList(ColorStateList.valueOf(
+                        ContextCompat.getColor(itemView.getContext(), R.color.status_synced)));
             } else if ("FAILED".equalsIgnoreCase(status)) {
-                tvStatusBadge.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#F44336")));
+                tvStatusBadge.setBackgroundTintList(ColorStateList.valueOf(
+                        ContextCompat.getColor(itemView.getContext(), R.color.status_failed)));
             } else if ("PROCESSING".equalsIgnoreCase(status)) {
-                tvStatusBadge.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#2196F3")));
+                tvStatusBadge.setBackgroundTintList(ColorStateList.valueOf(
+                        ContextCompat.getColor(itemView.getContext(), R.color.status_processing)));
             } else {
-                tvStatusBadge.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#FF9800")));
+                tvStatusBadge.setBackgroundTintList(ColorStateList.valueOf(
+                        ContextCompat.getColor(itemView.getContext(), R.color.status_pending)));
             }
 
             if (item.getLastError() != null && !item.getLastError().isEmpty()) {

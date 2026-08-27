@@ -34,7 +34,7 @@
                 android:id="@+id/tvQueueStatusBadge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@android:drawable/dialog_holo_light_frame"
+                android:background="@drawable/bg_status_badge"
                 android:paddingHorizontal="8dp"
                 android:paddingVertical="2dp"
                 android:text="PENDING"

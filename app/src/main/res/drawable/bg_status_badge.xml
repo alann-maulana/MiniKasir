@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Rounded rectangle background for status badge chips (PENDING / SYNCED / FAILED).
+     Fill color is overridden at runtime by the adapter via setBackgroundTintList(). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="4dp" />
+    <solid android:color="@color/status_pending" />
+</shape>

@@ -1,7 +1,6 @@
 package id.my.alan.minikasir.ui.transaction;
 
 import android.content.res.ColorStateList;
-import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -88,11 +87,14 @@ public class TransactionHistoryAdapter
             tvStatusBadge.setText(status);
 
             if ("SYNCED".equalsIgnoreCase(status)) {
-                tvStatusBadge.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#4CAF50")));
+                tvStatusBadge.setBackgroundTintList(ColorStateList.valueOf(
+                        ContextCompat.getColor(itemView.getContext(), R.color.status_synced)));
             } else if ("FAILED".equalsIgnoreCase(status)) {
-                tvStatusBadge.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#F44336")));
+                tvStatusBadge.setBackgroundTintList(ColorStateList.valueOf(
+                        ContextCompat.getColor(itemView.getContext(), R.color.status_failed)));
             } else {
-                tvStatusBadge.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#FF9800")));
+                tvStatusBadge.setBackgroundTintList(ColorStateList.valueOf(
+                        ContextCompat.getColor(itemView.getContext(), R.color.status_pending)));
             }
         }
     }

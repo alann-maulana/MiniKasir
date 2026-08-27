@@ -18,4 +18,10 @@
 
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
+
+    <!-- Tinted surface colors for section backgrounds -->
+    <color name="surface_blue_tint">#E8EAF6</color>
+    <color name="surface_green_tint">#E8F5E9</color>
+    <color name="surface_orange_tint">#FFF3E0</color>
+    <color name="surface_red_tint">#FFEBEE</color>
 </resources>
