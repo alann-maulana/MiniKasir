@@ -5,6 +5,8 @@ import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
+import androidx.room.Ignore;
+
 /**
  * Room entity representing a product in the MiniKasir POS system.
  * Mapped to the "products" table in the local SQLite database.
@@ -63,6 +65,7 @@ public class ProductEntity {
      * @param stock       initial stock quantity
      * @param description optional product description
      */
+    @Ignore
     public ProductEntity(@NonNull String name, long price, int stock, String description) {
         this.name = name;
         this.price = price;

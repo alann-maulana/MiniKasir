@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
@@ -115,6 +116,7 @@ public class TransactionEntity {
      * @param itemCount       number of distinct product lines
      * @param note            optional note (may be null)
      */
+    @Ignore
     public TransactionEntity(
             @NonNull String transactionCode,
             long totalAmount,

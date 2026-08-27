@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
+import androidx.room.Ignore;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
@@ -109,6 +110,7 @@ public class TransactionItemEntity {
      * @param price         unit price in Rupiah at time of sale
      * @param quantity      units sold
      */
+    @Ignore
     public TransactionItemEntity(
             long transactionId,
             long productId,

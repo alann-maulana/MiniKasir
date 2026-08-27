@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
@@ -168,6 +169,7 @@ public class SyncQueueEntity {
      * @param action     one of the {@code ACTION_*} constants
      * @param payload    JSON string body to send to the remote API
      */
+    @Ignore
     public SyncQueueEntity(
             @NonNull String entityType,
             long entityId,
