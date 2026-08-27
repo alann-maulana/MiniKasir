@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MiniKasir</string>
+    <string name="title_products">Katalog Produk</string>
+    <string name="title_add_product">Tambah Produk</string>
+    <string name="title_edit_product">Edit Produk</string>
+    <string name="title_transaction">Transaksi Kasir</string>
+    <string name="title_history">Riwayat Transaksi</string>
+    <string name="title_sync_status">Status Sinkronisasi</string>
+
+    <string name="menu_search">Cari</string>
+    <string name="menu_new_transaction">Transaksi Baru</string>
+    <string name="menu_history">Riwayat Transaksi</string>
+    <string name="menu_sync_status">Status Sync</string>
+
+    <string name="hint_product_name">Nama Produk</string>
+    <string name="hint_product_price">Harga (Rp)</string>
+    <string name="hint_product_stock">Stok</string>
+    <string name="hint_product_desc">Deskripsi Produk (opsional)</string>
+    <string name="hint_transaction_note">Catatan transaksi (opsional)</string>
+    <string name="search_product_hint">Cari produk...</string>
+
+    <string name="btn_save">Simpan</string>
+    <string name="btn_delete">Hapus Produk</string>
+    <string name="btn_cancel">Batal</string>
+    <string name="btn_checkout">Proses Pembayaran</string>
+    <string name="btn_pay">Bayar</string>
+    <string name="btn_clear_cart">Kosongkan</string>
+    <string name="btn_add_to_cart">Beli</string>
+    <string name="btn_sync_now">Sinkronkan Sekarang</string>
+
+    <string name="empty_products">Belum ada produk.\nTekan tombol + untuk menambah produk baru.</string>
+    <string name="empty_cart">Keranjang belanja masih kosong.\nPilih produk di bawah untuk menambahkan.</string>
+    <string name="empty_history">Belum ada riwayat transaksi.</string>
+    <string name="empty_sync_queue">Antrean sinkronisasi kosong.</string>
+
+    <string name="confirm_delete_title">Hapus Produk</string>
+    <string name="confirm_delete_message">Apakah Anda yakin ingin menghapus produk ini?</string>
+    <string name="confirm_checkout_title">Konfirmasi Checkout</string>
+    <string name="confirm_checkout_message">Simpan dan proses transaksi ini?</string>
+
+    <string name="error_name_required">Nama produk tidak boleh kosong</string>
+    <string name="error_price_invalid">Harga harus lebih dari 0</string>
+    <string name="error_stock_invalid">Stok tidak boleh bernilai negatif</string>
+
+    <string name="toast_product_saved">Produk berhasil disimpan</string>
+    <string name="toast_product_updated">Produk berhasil diperbarui</string>
+    <string name="toast_product_deleted">Produk berhasil dihapus</string>
+    <string name="snackbar_sync_started">Sinkronisasi data dijadwalkan...</string>
+</resources>
