@@ -79,7 +79,7 @@ public class SyncRepository {
      *         and were processed in total
      */
     public SyncResult syncPendingTransactions() {
-        List<SyncQueueEntity> pendingItems = syncQueueDao.getPendingItems(STATUS_PENDING);
+        List<SyncQueueEntity> pendingItems = syncQueueDao.getPendingItems();
         Log.d(TAG, "Starting sync – " + pendingItems.size() + " pending item(s)");
 
         int successCount = 0;
@@ -123,17 +123,17 @@ public class SyncRepository {
                 long syncedAt = body != null ? body.getSyncedAt() : System.currentTimeMillis();
 
                 // Mark the queue entry as successfully synced.
-                syncQueueDao.updateStatus(item.getId(), STATUS_SUCCESS, syncedAt, null);
+                syncQueueDao.updateStatus(item.getId(), STATUS_SUCCESS, null, syncedAt);
 
                 // Update the transaction record to reflect the synced state.
-                transactionDao.updateStatus(item.getTransactionId(), STATUS_SUCCESS, syncedAt);
+                transactionDao.updateTransactionStatus(item.getEntityId(), TransactionRepository.STATUS_SYNCED, syncedAt);
 
-                Log.d(TAG, "Synced: " + item.getTransactionCode());
+                Log.d(TAG, "Synced transaction #" + item.getEntityId());
                 return true;
 
             } else {
                 String errorMsg = extractErrorMessage(response);
-                Log.w(TAG, "Server rejected " + item.getTransactionCode() + ": " + errorMsg);
+                Log.w(TAG, "Server rejected transaction #" + item.getEntityId() + ": " + errorMsg);
                 handleFailure(item, errorMsg);
                 return false;
             }
@@ -141,7 +141,7 @@ public class SyncRepository {
         } catch (IOException e) {
             // Network error (timeout, no connectivity, etc.)
             String errorMsg = "Network error: " + e.getMessage();
-            Log.e(TAG, "Failed to sync " + item.getTransactionCode(), e);
+            Log.e(TAG, "Failed to sync transaction #" + item.getEntityId(), e);
             handleFailure(item, errorMsg);
             return false;
         }
@@ -165,13 +165,17 @@ public class SyncRepository {
      * @param errorMessage a human-readable description of the failure reason
      */
     private void handleFailure(SyncQueueEntity item, String errorMessage) {
+        long now = System.currentTimeMillis();
+        syncQueueDao.incrementRetry(item.getId(), now);
+
         int newRetryCount = item.getRetryCount() + 1;
         String newStatus  = (newRetryCount >= MAX_RETRY_COUNT) ? STATUS_FAILED : STATUS_PENDING;
 
-        syncQueueDao.updateRetry(item.getId(), newRetryCount, newStatus, errorMessage);
+        syncQueueDao.updateStatus(item.getId(), newStatus, errorMessage, now);
 
         if (STATUS_FAILED.equals(newStatus)) {
-            Log.e(TAG, item.getTransactionCode()
+            transactionDao.updateTransactionStatus(item.getEntityId(), TransactionRepository.STATUS_FAILED, 0L);
+            Log.e(TAG, "Transaction #" + item.getEntityId()
                     + " permanently failed after " + newRetryCount + " attempt(s)");
         }
     }
