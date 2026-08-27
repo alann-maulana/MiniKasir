@@ -24,10 +24,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import id.my.alan.minikasir.data.local.AppDatabase;
-import id.my.alan.minikasir.data.model.Transaction;
-import id.my.alan.minikasir.data.model.TransactionItem;
-import id.my.alan.minikasir.data.model.TransactionWithItems;
+import id.my.alan.minikasir.data.local.db.AppDatabase;
+import id.my.alan.minikasir.data.local.entity.ProductEntity;
+import id.my.alan.minikasir.data.local.entity.TransactionEntity;
+import id.my.alan.minikasir.data.local.entity.TransactionItemEntity;
 
 /**
  * Instrumented integration tests for {@link TransactionDao}.
@@ -44,6 +44,9 @@ public class TransactionDaoTest {
 
     private AppDatabase    database;
     private TransactionDao transactionDao;
+    private ProductDao     productDao;
+    private long           seedProductId1;
+    private long           seedProductId2;
 
     // -------------------------------------------------------------------------
     // Lifecycle
@@ -56,6 +59,16 @@ public class TransactionDaoTest {
                 .allowMainThreadQueries()
                 .build();
         transactionDao = database.transactionDao();
+        productDao     = database.productDao();
+
+        // Pre-insert two products so TransactionItem foreign keys are satisfied.
+        ProductEntity p1 = new ProductEntity();
+        p1.setName("Kopi Hitam"); p1.setPrice(5_000L); p1.setStock(100);
+        seedProductId1 = productDao.insertProduct(p1);
+
+        ProductEntity p2 = new ProductEntity();
+        p2.setName("Roti Bakar"); p2.setPrice(13_000L); p2.setStock(50);
+        seedProductId2 = productDao.insertProduct(p2);
     }
 
     @After
@@ -67,23 +80,25 @@ public class TransactionDaoTest {
     // Helpers
     // -------------------------------------------------------------------------
 
-    private Transaction makeTransaction(String code, String status, long totalAmount) {
-        Transaction t = new Transaction();
+    private TransactionEntity makeTransaction(String code, String status, long totalAmount) {
+        TransactionEntity t = new TransactionEntity();
         t.setTransactionCode(code);
         t.setStatus(status);
         t.setTotalAmount(totalAmount);
+        t.setItemCount(1);
         t.setCreatedAt(System.currentTimeMillis());
-        t.setSynced(false);
+        t.setSyncedAt(0L);
         return t;
     }
 
-    private TransactionItem makeItem(long transactionId, String productName,
-                                     int qty, long pricePerUnit) {
-        TransactionItem item = new TransactionItem();
+    private TransactionItemEntity makeItem(long transactionId, long productId,
+                                           String productName, int qty, long pricePerUnit) {
+        TransactionItemEntity item = new TransactionItemEntity();
         item.setTransactionId(transactionId);
+        item.setProductId(productId);
         item.setProductName(productName);
         item.setQuantity(qty);
-        item.setPricePerUnit(pricePerUnit);
+        item.setPrice(pricePerUnit);
         item.setSubtotal((long) qty * pricePerUnit);
         return item;
     }
@@ -119,39 +134,39 @@ public class TransactionDaoTest {
      * transaction with exactly two associated items.
      */
     @Test
-    public void insertTransactionAndItems_getTransactionWithItems_itemsCountMatches()
-            throws InterruptedException {
-        Transaction transaction = makeTransaction("TRX-001", "COMPLETED", 23_000L);
+    public void insertTransactionAndItems_getTransactionWithItems_itemsCountMatches() {
+        TransactionEntity transaction = makeTransaction("TRX-001", "PENDING", 23_000L);
         long transactionId = transactionDao.insertTransaction(transaction);
 
         transactionDao.insertTransactionItems(Arrays.asList(
-                makeItem(transactionId, "Kopi Hitam", 2, 5_000L),
-                makeItem(transactionId, "Roti Bakar", 1, 13_000L)
+                makeItem(transactionId, seedProductId1, "Kopi Hitam", 2, 5_000L),
+                makeItem(transactionId, seedProductId2, "Roti Bakar", 1, 13_000L)
         ));
 
-        TransactionWithItems result = transactionDao.getTransactionWithItems(transactionId);
+        TransactionDao.TransactionWithItems result =
+                transactionDao.getTransactionWithItems(transactionId);
 
         assertNotNull("TransactionWithItems must not be null", result);
-        assertNotNull("Embedded transaction must not be null", result.getTransaction());
-        assertNotNull("Items list must not be null", result.getItems());
-        assertEquals("Must have exactly 2 items", 2, result.getItems().size());
+        assertNotNull("Embedded transaction must not be null", result.transaction);
+        assertNotNull("Items list must not be null", result.items);
+        assertEquals("Must have exactly 2 items", 2, result.items.size());
     }
 
     /**
      * A transaction with zero items must return an empty (not null) items list.
      */
     @Test
-    public void insertTransactionWithNoItems_getTransactionWithItems_emptyItemsList()
-            throws InterruptedException {
-        Transaction transaction = makeTransaction("TRX-002", "PENDING", 0L);
+    public void insertTransactionWithNoItems_getTransactionWithItems_emptyItemsList() {
+        TransactionEntity transaction = makeTransaction("TRX-002", "PENDING", 0L);
         long transactionId = transactionDao.insertTransaction(transaction);
 
-        TransactionWithItems result = transactionDao.getTransactionWithItems(transactionId);
+        TransactionDao.TransactionWithItems result =
+                transactionDao.getTransactionWithItems(transactionId);
 
         assertNotNull(result);
-        assertNotNull(result.getItems());
+        assertNotNull(result.items);
         assertEquals("Items list must be empty for a transaction with no items",
-                0, result.getItems().size());
+                0, result.items.size());
     }
 
     // =========================================================================
@@ -159,51 +174,45 @@ public class TransactionDaoTest {
     // =========================================================================
 
     /**
-     * getTransactionsByStatus("COMPLETED") must return only completed transactions.
+     * getTransactionsByStatus("SYNCED") must return only synced transactions.
      */
     @Test
-    public void getTransactionsByStatus_returnsOnlyMatchingTransactions()
-            throws InterruptedException {
-        transactionDao.insertTransaction(makeTransaction("TRX-A1", "COMPLETED", 10_000L));
-        transactionDao.insertTransaction(makeTransaction("TRX-A2", "COMPLETED", 20_000L));
-        transactionDao.insertTransaction(makeTransaction("TRX-A3", "PENDING",   15_000L));
+    public void getTransactionsByStatus_returnsOnlyMatchingTransactions() {
+        transactionDao.insertTransaction(makeTransaction("TRX-A1", "SYNCED",  10_000L));
+        transactionDao.insertTransaction(makeTransaction("TRX-A2", "SYNCED",  20_000L));
+        transactionDao.insertTransaction(makeTransaction("TRX-A3", "PENDING", 15_000L));
 
-        List<Transaction> completed =
-                getOrAwaitValue(transactionDao.getTransactionsByStatus("COMPLETED"));
+        List<TransactionEntity> synced = transactionDao.getTransactionsByStatus("SYNCED");
 
-        assertNotNull(completed);
-        assertEquals("Must return only 2 COMPLETED transactions", 2, completed.size());
-        for (Transaction t : completed) {
-            assertEquals("Status must be COMPLETED", "COMPLETED", t.getStatus());
+        assertNotNull(synced);
+        assertEquals("Must return only 2 SYNCED transactions", 2, synced.size());
+        for (TransactionEntity t : synced) {
+            assertEquals("Status must be SYNCED", "SYNCED", t.getStatus());
         }
     }
 
     /**
-     * getTransactionsByStatus for a status with no records must emit an empty list.
+     * getTransactionsByStatus for a status with no records must return an empty list.
      */
     @Test
-    public void getTransactionsByStatus_noMatchingStatus_returnsEmptyList()
-            throws InterruptedException {
-        transactionDao.insertTransaction(makeTransaction("TRX-B1", "COMPLETED", 5_000L));
+    public void getTransactionsByStatus_noMatchingStatus_returnsEmptyList() {
+        transactionDao.insertTransaction(makeTransaction("TRX-B1", "SYNCED", 5_000L));
 
-        List<Transaction> pending =
-                getOrAwaitValue(transactionDao.getTransactionsByStatus("PENDING"));
+        List<TransactionEntity> pending = transactionDao.getTransactionsByStatus("PENDING");
 
         assertNotNull(pending);
         assertEquals("Must return empty list when no match", 0, pending.size());
     }
 
     /**
-     * getTransactionsByStatus("PENDING") must not include COMPLETED transactions.
+     * getTransactionsByStatus("PENDING") must not include SYNCED transactions.
      */
     @Test
-    public void getTransactionsByStatus_pendingQuery_doesNotReturnCompleted()
-            throws InterruptedException {
-        transactionDao.insertTransaction(makeTransaction("TRX-C1", "PENDING",   8_000L));
-        transactionDao.insertTransaction(makeTransaction("TRX-C2", "COMPLETED", 12_000L));
+    public void getTransactionsByStatus_pendingQuery_doesNotReturnSynced() {
+        transactionDao.insertTransaction(makeTransaction("TRX-C1", "PENDING", 8_000L));
+        transactionDao.insertTransaction(makeTransaction("TRX-C2", "SYNCED", 12_000L));
 
-        List<Transaction> pending =
-                getOrAwaitValue(transactionDao.getTransactionsByStatus("PENDING"));
+        List<TransactionEntity> pending = transactionDao.getTransactionsByStatus("PENDING");
 
         assertNotNull(pending);
         assertEquals(1, pending.size());
@@ -218,43 +227,41 @@ public class TransactionDaoTest {
      * updateTransactionStatus must change the status of the specified transaction.
      */
     @Test
-    public void updateTransactionStatus_statusIsChanged() throws InterruptedException {
-        Transaction transaction = makeTransaction("TRX-D1", "PENDING", 30_000L);
+    public void updateTransactionStatus_statusIsChanged() {
+        TransactionEntity transaction = makeTransaction("TRX-D1", "PENDING", 30_000L);
         long id = transactionDao.insertTransaction(transaction);
 
-        transactionDao.updateTransactionStatus(id, "COMPLETED");
+        transactionDao.updateTransactionStatus(id, "SYNCED", System.currentTimeMillis());
 
-        List<Transaction> completed =
-                getOrAwaitValue(transactionDao.getTransactionsByStatus("COMPLETED"));
+        List<TransactionEntity> synced = transactionDao.getTransactionsByStatus("SYNCED");
 
-        assertNotNull(completed);
-        assertFalse("Completed list must not be empty after status update", completed.isEmpty());
+        assertNotNull(synced);
+        assertFalse("Synced list must not be empty after status update", synced.isEmpty());
 
         boolean found = false;
-        for (Transaction t : completed) {
+        for (TransactionEntity t : synced) {
             if (t.getTransactionCode().equals("TRX-D1")) {
                 found = true;
-                assertEquals("Status must be COMPLETED", "COMPLETED", t.getStatus());
+                assertEquals("Status must be SYNCED", "SYNCED", t.getStatus());
             }
         }
-        assertEquals("TRX-D1 must appear in COMPLETED list", true, found);
+        assertEquals("TRX-D1 must appear in SYNCED list", true, found);
     }
 
     /**
      * updateTransactionStatus must not change the status of other transactions.
      */
     @Test
-    public void updateTransactionStatus_doesNotAffectOtherTransactions()
-            throws InterruptedException {
+    public void updateTransactionStatus_doesNotAffectOtherTransactions() {
         long idToUpdate = transactionDao.insertTransaction(
                 makeTransaction("TRX-E1", "PENDING", 5_000L));
         transactionDao.insertTransaction(
                 makeTransaction("TRX-E2", "PENDING", 10_000L));
 
-        transactionDao.updateTransactionStatus(idToUpdate, "COMPLETED");
+        transactionDao.updateTransactionStatus(idToUpdate, "SYNCED", System.currentTimeMillis());
 
-        List<Transaction> stillPending =
-                getOrAwaitValue(transactionDao.getTransactionsByStatus("PENDING"));
+        List<TransactionEntity> stillPending =
+                transactionDao.getTransactionsByStatus("PENDING");
 
         assertNotNull(stillPending);
         assertEquals("Only TRX-E2 should remain PENDING", 1, stillPending.size());

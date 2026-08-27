@@ -23,8 +23,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import id.my.alan.minikasir.data.local.AppDatabase;
-import id.my.alan.minikasir.data.model.Product;
+import id.my.alan.minikasir.data.local.db.AppDatabase;
+import id.my.alan.minikasir.data.local.entity.ProductEntity;
 
 /**
  * Instrumented integration tests for {@link ProductDao}.
@@ -68,13 +68,15 @@ public class ProductDaoTest {
     // Helpers
     // -------------------------------------------------------------------------
 
-    private Product makeProduct(String name, long price, int stock) {
-        Product p = new Product();
+    private ProductEntity makeProduct(String name, long price, int stock) {
+        ProductEntity p = new ProductEntity();
         p.setName(name);
         p.setPrice(price);
         p.setStock(stock);
-        p.setCategory("Makanan");
         p.setDescription("Test product: " + name);
+        long now = System.currentTimeMillis();
+        p.setCreatedAt(now);
+        p.setUpdatedAt(now);
         return p;
     }
 
@@ -116,17 +118,16 @@ public class ProductDaoTest {
      * Insert a product and retrieve it by ID; all fields must match the inserted values.
      */
     @Test
-    public void insertAndGetProduct_fieldsMatch() throws InterruptedException {
-        Product product = makeProduct("Nasi Goreng", 15_000L, 50);
+    public void insertAndGetProduct_fieldsMatch() {
+        ProductEntity product = makeProduct("Nasi Goreng", 15_000L, 50);
         long id = productDao.insertProduct(product);
 
-        Product retrieved = productDao.getProductById(id);
+        ProductEntity retrieved = productDao.getProductById(id);
 
         assertNotNull("Retrieved product must not be null", retrieved);
-        assertEquals("Name must match",     "Nasi Goreng", retrieved.getName());
-        assertEquals("Price must match",    15_000L,       retrieved.getPrice());
-        assertEquals("Stock must match",    50,            retrieved.getStock());
-        assertEquals("Category must match", "Makanan",     retrieved.getCategory());
+        assertEquals("Name must match",  "Nasi Goreng", retrieved.getName());
+        assertEquals("Price must match", 15_000L,       retrieved.getPrice());
+        assertEquals("Stock must match", 50,            retrieved.getStock());
     }
 
     // =========================================================================
@@ -142,7 +143,7 @@ public class ProductDaoTest {
         productDao.insertProduct(makeProduct("Teh Manis",    3_000L, 80));
         productDao.insertProduct(makeProduct("Jus Alpukat", 12_000L, 30));
 
-        List<Product> products = getOrAwaitValue(productDao.getAllProducts());
+        List<ProductEntity> products = getOrAwaitValue(productDao.getAllProducts());
 
         assertNotNull("Product list must not be null", products);
         assertEquals("Must contain exactly 3 products", 3, products.size());
@@ -153,7 +154,7 @@ public class ProductDaoTest {
      */
     @Test
     public void getAllProducts_emptyDatabase_emitsEmptyList() throws InterruptedException {
-        List<Product> products = getOrAwaitValue(productDao.getAllProducts());
+        List<ProductEntity> products = getOrAwaitValue(productDao.getAllProducts());
 
         assertNotNull(products);
         assertEquals("Empty database must produce an empty list", 0, products.size());
@@ -167,16 +168,16 @@ public class ProductDaoTest {
      * Insert a product, update its name, then retrieve it — the new name must be reflected.
      */
     @Test
-    public void updateProduct_nameChanged_retrievedNameIsUpdated() throws InterruptedException {
-        Product product = makeProduct("Es Teh", 3_000L, 60);
+    public void updateProduct_nameChanged_retrievedNameIsUpdated() {
+        ProductEntity product = makeProduct("Es Teh", 3_000L, 60);
         long id = productDao.insertProduct(product);
 
-        Product inserted = productDao.getProductById(id);
+        ProductEntity inserted = productDao.getProductById(id);
         assertNotNull(inserted);
         inserted.setName("Es Teh Manis");
         productDao.updateProduct(inserted);
 
-        Product updated = productDao.getProductById(id);
+        ProductEntity updated = productDao.getProductById(id);
         assertNotNull("Updated product must not be null", updated);
         assertEquals("Name must reflect the update", "Es Teh Manis", updated.getName());
     }
@@ -185,16 +186,16 @@ public class ProductDaoTest {
      * Updating a product must not change the IDs of other products in the database.
      */
     @Test
-    public void updateProduct_doesNotAffectOtherProducts() throws InterruptedException {
+    public void updateProduct_doesNotAffectOtherProducts() {
         long id1 = productDao.insertProduct(makeProduct("Produk A", 1_000L, 10));
         long id2 = productDao.insertProduct(makeProduct("Produk B", 2_000L, 20));
 
-        Product productA = productDao.getProductById(id1);
+        ProductEntity productA = productDao.getProductById(id1);
         assertNotNull(productA);
         productA.setName("Produk A Updated");
         productDao.updateProduct(productA);
 
-        Product productB = productDao.getProductById(id2);
+        ProductEntity productB = productDao.getProductById(id2);
         assertNotNull(productB);
         assertEquals("Produk B's name must be unchanged", "Produk B", productB.getName());
     }
@@ -208,15 +209,15 @@ public class ProductDaoTest {
      */
     @Test
     public void deleteProduct_afterDelete_getByIdReturnsNull() {
-        Product product = makeProduct("Pisang Goreng", 2_500L, 25);
+        ProductEntity product = makeProduct("Pisang Goreng", 2_500L, 25);
         long id = productDao.insertProduct(product);
 
-        Product inserted = productDao.getProductById(id);
+        ProductEntity inserted = productDao.getProductById(id);
         assertNotNull("Product must exist before deletion", inserted);
 
         productDao.deleteProduct(inserted);
 
-        Product afterDelete = productDao.getProductById(id);
+        ProductEntity afterDelete = productDao.getProductById(id);
         assertNull("Product must be null after deletion", afterDelete);
     }
 
@@ -228,11 +229,11 @@ public class ProductDaoTest {
         long id1 = productDao.insertProduct(makeProduct("Kopi Hitam", 5_000L, 10));
         long id2 = productDao.insertProduct(makeProduct("Kopi Susu",  8_000L, 10));
 
-        Product product1 = productDao.getProductById(id1);
+        ProductEntity product1 = productDao.getProductById(id1);
         assertNotNull(product1);
         productDao.deleteProduct(product1);
 
-        List<Product> remaining = getOrAwaitValue(productDao.getAllProducts());
+        List<ProductEntity> remaining = getOrAwaitValue(productDao.getAllProducts());
         assertNotNull(remaining);
         assertEquals("Only one product must remain", 1, remaining.size());
         assertEquals("Kopi Susu", remaining.get(0).getName());
