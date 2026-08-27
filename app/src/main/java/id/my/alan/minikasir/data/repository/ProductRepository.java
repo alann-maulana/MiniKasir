@@ -59,14 +59,13 @@ public class ProductRepository {
     }
 
     /**
-     * Returns a {@link LiveData} stream for a single product identified by its
-     * primary key. The stream emits {@code null} if the product does not exist
-     * or has been deleted.
+     * Returns a single product identified by its primary key.
+     * Must be called from a background thread.
      *
      * @param id the product primary key
-     * @return observable {@link ProductEntity}, or {@code null} if not found
+     * @return the matching {@link ProductEntity}, or {@code null} if not found
      */
-    public LiveData<ProductEntity> getProductById(long id) {
+    public ProductEntity getProductById(long id) {
         return productDao.getProductById(id);
     }
 
@@ -92,7 +91,7 @@ public class ProductRepository {
      * @param product the product to insert
      */
     public void insertProduct(ProductEntity product) {
-        executor.execute(() -> productDao.insert(product));
+        executor.execute(() -> productDao.insertProduct(product));
     }
 
     /**
@@ -101,7 +100,7 @@ public class ProductRepository {
      * @param product the product with updated field values
      */
     public void updateProduct(ProductEntity product) {
-        executor.execute(() -> productDao.update(product));
+        executor.execute(() -> productDao.updateProduct(product));
     }
 
     /**
@@ -110,6 +109,6 @@ public class ProductRepository {
      * @param product the product to delete
      */
     public void deleteProduct(ProductEntity product) {
-        executor.execute(() -> productDao.delete(product));
+        executor.execute(() -> productDao.deleteProduct(product));
     }
 }
